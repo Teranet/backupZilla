@@ -91,7 +91,7 @@ def RunCommands(command):
 
 
 def addCron(cron,ssh,backupdir,location):
-        fileName =location.replace('/','_')
+        fileName =location.replace('/','_').strip()
         bc_sh_content =  "tt=(\`date +%Y-%b-%d-%H-%M-%S\`) ;"+"cd "+ location +" ;"+"bfile="+backupdir+"/"+fileName+"_\$tt.tar.gz; tar --exclude ./bc.sh  -zcvf \$bfile . ;  scp \$bfile "+MainConfigs['username']+"@"+MainConfigs['backupserver']+":"
         bcfile = location+"/bc.sh"
         createshCommand = ssh + " 'cd "+location+ "  && echo \""+bc_sh_content+"\" > "+bcfile+"' "
