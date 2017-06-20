@@ -48,7 +48,7 @@
 #                By Kaburu                                              #
 ############################################################################################################################
 
-
+from datetime import datetime
 import subprocess
 import os
 import ConfigParser
@@ -100,11 +100,11 @@ def addCron(cron,ssh,backupdir,location):
             createCronCm = ssh + " \" crontab -l > tmp ; echo '"+cron+" bash "+location+"/bc.sh' >> tmp ; crontab tmp ; rm -rf tmp \""
             cronRes = RunCommands(createCronCm)
             if cronRes == 0:
-                print bcfile+" ::Cron installed successfully"
+                print ttime+"| "+bcfile+" ::Cron installed successfully"
             else:
-                print "Unable to install the cron for ::: "+bcfile
+                print ttime+"|  Unable to install the cron for ::: "+bcfile
         else:
-            print "We are unable to generate bc.sh file on the server, check the permissions maybe: Here is the response::: \n"+createsh
+            print ttime+"| We are unable to generate bc.sh file on the server, check the permissions maybe: Here is the response::: \n"+createsh
 
 
 
@@ -113,7 +113,7 @@ def addCron(cron,ssh,backupdir,location):
 
 
 def process(server,configs,ssh):
-    print server +": processing ... \n"
+    print ttime+"| "+server +": processing ... \n"
     serverConfigs = mapconfig(configs,server)
     dirs = serverConfigs['datadirs'].split(",")
     for directory in dirs:
@@ -128,7 +128,7 @@ def process(server,configs,ssh):
                 addCron(cronTime,ssh,serverConfigs['backuplocation'],Cdirectory)
         
         else:
-            print "The cron exists"
+            print ttime+"| The cron exists"
 
 
            
@@ -147,7 +147,8 @@ def init():
     Configurations = configs()
     global MainConfigs
     MainConfigs = mapconfig(Configurations,"main")
-
+    global ttime
+    ttime = str(datetime.now())
     servers = Configurations.sections()
     servers.remove("main")
     for server in servers:
