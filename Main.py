@@ -45,7 +45,7 @@
 #                                                ################ 
 #
 ############################################################################################################################
-#                By Kaburu                                              #
+#                By Kaburu                                                                                                 #
 ############################################################################################################################
 
 from datetime import datetime
@@ -92,19 +92,26 @@ def RunCommands(command):
 
 def addCron(cron,ssh,backupdir,location):
         fileName =location.replace('/','_').strip()
-        bc_sh_content =  "tt=(\`date +%Y-%b-%d-%H-%M-%S\`) ;"+"cd "+ location +" ;"+"bfile="+backupdir+"/"+fileName+"_\$tt.tar.gz; tar --exclude ./bc.sh  -zcvf \$bfile . ;  scp \$bfile "+MainConfigs['username']+"@"+MainConfigs['backupserver']+":"
+        bc_sh_content =  "tt=(\`date +%Y-%b-%d-%H-%M-%S\`) ;"+"cd "+ location 
+        +" ;"+"bfile="+backupdir+"/"+fileName
+        +"_\$tt.tar.gz; tar --exclude ./bc.sh  -zcvf \$bfile . ;  scp \$bfile "
+        +MainConfigs['username']+"@"+MainConfigs['backupserver']+":"
         bcfile = location+"/bc.sh"
         createshCommand = ssh + " 'cd "+location+ "  && echo \""+bc_sh_content+"\" > "+bcfile+"' "
         createsh = RunCommands(createshCommand)
+       
+       
         if createsh == 0:
-            createCronCm = ssh + " \" crontab -l > tmp ; echo '"+cron+" bash "+location+"/bc.sh' >> tmp ; crontab tmp ; rm -rf tmp \""
+            createCronCm = ssh + " \" crontab -l > tmp ; echo '"
+            +cron+" bash "+location+"/bc.sh' >> tmp ; crontab tmp ; rm -rf tmp \""
             cronRes = RunCommands(createCronCm)
             if cronRes == 0:
                 print ttime+"| "+bcfile+" ::Cron installed successfully"
             else:
                 print ttime+"|  Unable to install the cron for ::: "+bcfile
         else:
-            print ttime+"| We are unable to generate bc.sh file on the server, check the permissions maybe: Here is the response::: \n"+createsh
+            print ttime+"| We are unable to generate bc.sh file on the server,"
+            +" check the permissions maybe: Here is the response::: \n"+createsh
 
 
 
