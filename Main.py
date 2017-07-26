@@ -86,41 +86,55 @@ def RunCommands(command):
     res = subprocess.call(command,shell=True)
     return res
 
-
+def homeDir(ssh):
+    command = ssh + " 'cd ~; pwd '"
+    p = subprocess.Popen(command, shell=True,\
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE, \
+            stderr=subprocess.STDOUT, close_fds=True)
+    userHome = p.stdout.read()
+    #Let's create the directory crons if it doesn't exist
+    cronDir = str(userHome).strip()+"/crons/"
+    return cronDir
 
 
 
 
 def addCron(cron,ssh,backupdir,location):
-        fileName =location.replace('/','_').strip()
-        bc_sh_content =  "tt=(\`date +%Y-%b-%d-%H-%M-%S\`) ;"+"cd "+ location+" ;bfile="+backupdir+"/"+fileName +"_\$tt.tar.gz; tar   -zcvf \$bfile . ;  scp \$bfile "+MainConfigs['username']+"@"+MainConfigs['backupserver']+":"
-        #We keep all the shell scripts on user's home directory. This is to avoid write/execute permmision issues.
-        cronscriptsCommand = ssh + " ' cd ~ ; pwd  '"
-        p = subprocess.Popen(cronscriptsCommand, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, close_fds=True)
-        userHome = p.stdout.read()
-       #Let's create the directory crons if it doesn't exist
-        cronDir = str(userHome).strip()+"/crons/"
-        createDIR = ssh +" 'if  [ ! -d "+cronDir+" ]; then  mkdir -p  "+cronDir +"; else exit 0 ; fi ' "
-        if (RunCommands(createDIR) != 0):
-            print "We are unable to create DIR : "+cronDir+" \n"
-            sys.exit()
-        
-        bcfile = cronDir+fileName+".sh"
-        createshCommand = ssh + " 'cd "+location+ "  && echo \""+bc_sh_content+"\" > "+bcfile+"' "
-        createsh = RunCommands(createshCommand)
-       
-       
-        if createsh == 0:
-            createCronCm = ssh + " \" crontab -l > tmp ; echo '"+cron+" bash "+bcfile+" ' >> tmp ; crontab tmp ; rm -rf tmp \""
-            cronRes = RunCommands(createCronCm)
-            if cronRes == 0:
+    fileName =location.replace('/','_').strip()
+    bc_sh_content =  "tt=(\`date +%Y-%b-%d-%H-%M-%S\`) ;" \
+                + "cd "+ location+" ;bfile="+backupdir+"/"\
+                +fileName +"_\$tt.tar.gz; tar  \
+                -zcvf \$bfile . ;  scp \$bfile "\
+                +MainConfigs['username']+"@"+MainConfigs['backupserver']+":"
+    #We keep all the shell scripts on user's home directory.
+    #This is to avoid write/execute permmision issues.
+    cronDir = homeDir(ssh)
+    createDIR = ssh +" 'if  [ ! -d "+cronDir+" ]; then \
+                mkdir -p  "+cronDir +"; else exit 0 ; fi ' "
+    if (RunCommands(createDIR) != 0):
+         print "We are unable to create DIR : "+cronDir+" \n"
+         sys.exit()
+
+    bcfile = cronDir+fileName+".sh"
+    createshCommand = ssh + " 'cd "+location+ " \
+            && echo \""+bc_sh_content+"\" > "+bcfile+"' "
+    createsh = RunCommands(createshCommand)
+
+    if createsh == 0:
+        createCronCm = ssh + " \" crontab -l > tmp ; \
+                    echo '"+cron+" bash "+bcfile+" ' >> tmp \
+                    ; crontab tmp ; rm -rf tmp \""
+        cronRes = RunCommands(createCronCm)
+        if cronRes == 0:
                 print ttime+"| "+bcfile+" ::Cron installed successfully"
-            else:
+        else:
                 print ttime+"|  Unable to install the cron for ::: "+bcfile
                 sys.exit()
-        else:
-            print ttime+"| We are unable to generate "+bcfile+ " file on the server, check the permissions maybe: Here is the response::: \n"+createsh
-            sys.exit()
+    else:
+        print ttime+"| We are unable to generate "+bcfile+ " file on the \
+                    server, check the permissions maybe: \
+                    Here is the response::: \n"+createsh
+        sys.exit()
 
 
 
@@ -135,19 +149,22 @@ def process(server,configs,ssh):
     for directory in dirs:
         cronTime = directory[directory.find("[")+1:directory.find("]")]
         Cdirectory = directory.split('[')[0]
-        stringCron = cronTime + " cd  "+Cdirectory+'/bc.sh'
-        escapedStars = Cdirectory+'/bc.sh'
+        cronfileName = Cdirectory.replace('/','_').strip()
+        cronHome = homeDir(ssh)
+        stringCron = cronTime + " cd  "+cronHome+cronfileName+'.sh'
+        escapedStars = cronHome+cronfileName+'.sh'
 
         command  = ssh + " 'crontab -l | grep \""+escapedStars +"\" ' "
         checkCron = RunCommands(command)
         if checkCron == 1:
-                addCron(cronTime,ssh,serverConfigs['backuplocation'],Cdirectory)
-        
+            addCron(cronTime,ssh,serverConfigs['backuplocation'],
+                    Cdirectory)
+
         else:
             print ttime+"| The cron exists"
 
 
-           
+
 
 
 
@@ -159,7 +176,7 @@ def init():
     Os = os.uname()
     if Os[0] != 'Linux':
         sys.exit('This only runs on Linux based servers')
-        
+
     Configurations = configs()
     global MainConfigs
     MainConfigs = mapconfig(Configurations,"main")
